@@ -1,12 +1,14 @@
 # Auto-anchor utils
+import os, sys
 
+sys.path.insert(1, os.path.join(sys.path[0], "..", ".."))
 import numpy as np
 import torch
 import yaml
 from scipy.cluster.vq import kmeans
 from tqdm import tqdm
 
-from utils.general import colorstr
+from yolov5_face.utils.general import colorstr
 
 
 def check_anchor_order(m):

@@ -1,5 +1,7 @@
 # General utils
+import os, sys
 
+sys.path.insert(1, os.path.join(sys.path[0], "..", ".."))
 import glob
 import logging
 import math
@@ -16,9 +18,9 @@ import torch
 import torchvision
 import yaml
 
-from utils.google_utils import gsutil_getsize
-from utils.metrics import fitness
-from utils.torch_utils import init_torch_seeds
+from yolov5_face.utils.google_utils import gsutil_getsize
+from yolov5_face.utils.metrics import fitness
+from yolov5_face.utils.torch_utils import init_torch_seeds
 
 # Settings
 torch.set_printoptions(linewidth=320, precision=5, profile='long')
@@ -644,3 +646,36 @@ def increment_path(path, exist_ok=True, sep=''):
         i = [int(m.groups()[0]) for m in matches if m]  # indices
         n = max(i) + 1 if i else 2  # increment number
         return f"{path}{sep}{n}"  # update path
+
+def filter_boxes(boxes, min_size):
+    """ Remove all boxes with any side smaller than min_size """
+    ws = boxes[:, 2] - boxes[:, 0] + 1
+    hs = boxes[:, 3] - boxes[:, 1] + 1
+    keep = np.where((hs >= min_size))[0]
+#         keep = np.where((ws >= min_size) & (hs >= min_size))[0]
+    return keep
+
+def scale_coords_landmarks(img1_shape, coords, img0_shape, ratio_pad=None):
+    # Rescale coords (xyxy) from img1_shape to img0_shape
+    if ratio_pad is None:  # calculate from img0_shape
+        gain = min(img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1])  # gain  = old / new
+        pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
+    else:
+        gain = ratio_pad[0][0]
+        pad = ratio_pad[1]
+
+    coords[:, [0, 2, 4, 6, 8]] -= pad[0]  # x padding
+    coords[:, [1, 3, 5, 7, 9]] -= pad[1]  # y padding
+    coords[:, :10] /= gain
+    #clip_coords(coords, img0_shape)
+    coords[:, 0].clamp_(0, img0_shape[1])  # x1
+    coords[:, 1].clamp_(0, img0_shape[0])  # y1
+    coords[:, 2].clamp_(0, img0_shape[1])  # x2
+    coords[:, 3].clamp_(0, img0_shape[0])  # y2
+    coords[:, 4].clamp_(0, img0_shape[1])  # x3
+    coords[:, 5].clamp_(0, img0_shape[0])  # y3
+    coords[:, 6].clamp_(0, img0_shape[1])  # x4
+    coords[:, 7].clamp_(0, img0_shape[0])  # y4
+    coords[:, 8].clamp_(0, img0_shape[1])  # x5
+    coords[:, 9].clamp_(0, img0_shape[0])  # y5
+    return coords
